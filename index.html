@@ -1,0 +1,1191 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wye Tide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,700&display=swap" rel="stylesheet">
+
+<style>
+  /* Theme: dark ("lightning bug") is the default palette on :root; the
+     .light class (toggled onto <html>) swaps in the light palette. Every
+     color elsewhere in this stylesheet reads from these variables. */
+  :root {
+    --gap: 16px; --pad: 18px;
+    color-scheme: dark;
+
+    --bg: #0a1f1d;
+    --card-bg: #123330;
+    --card-border: #1f4d47;
+    --card-hover: #163a36;
+    --card-shadow: 0 1px 4px rgba(0,0,0,.45);
+    --text: #e9f3ef;
+    --value-color: #f5f2e2;
+    --muted: #86ab9f;
+    --divider: rgba(244,211,94,.35);
+    --link: #5ad6c4;
+    --icon-bright: #f4d35e;
+    --icon-dim: #6f9990;
+    --moon-lit: #fdf3d8;
+    --moon-dark: #0a1f1d;
+    --hazard: #ff7a6b;
+    --hazard-hover: #ffab9c;
+    --haz-good: #6fe3a6;
+    --error-bg: rgba(255,122,107,.10);
+    --error-border: rgba(255,122,107,.35);
+    --dot-ring: rgba(0,0,0,.35);
+  }
+  :root.light {
+    color-scheme: light;
+    --bg: #f4f6f8;
+    --card-bg: #ffffff;
+    --card-border: #e2e8f0;
+    --card-hover: #f8fafc;
+    --card-shadow: none;
+    --text: #1a1a1a;
+    --value-color: #334155;
+    --muted: #94a3b8;
+    --divider: #e2e8f0;
+    --link: #2b6cb0;
+    --icon-bright: #d4a017;
+    --icon-dim: #94a3b8;
+    --moon-lit: #e8eaf0;
+    --moon-dark: #334155;
+    --hazard: #b91c1c;
+    --hazard-hover: #7f1d1d;
+    --haz-good: #16a34a;
+    --error-bg: #fef2f2;
+    --error-border: #fecaca;
+    --dot-ring: rgba(0,0,0,.08);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    margin: 0; padding: 24px; background: var(--bg); color: var(--text);
+    line-height: 1.45;
+    transition: background-color .25s ease, color .25s ease;
+  }
+  header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 16px; margin-bottom: 20px; max-width: 500px;
+  }
+  /* Title: Fraunces italic at 700 — bold but not the full 900. Color is the same 
+     teal used by the footer source links. line-height:1 keeps the tittle clip below
+     predictable. */
+  h1 {
+    font-family: Fraunces, Georgia, serif;
+    font-size: 1.7rem; font-weight: 700; font-style: italic;
+    line-height: 1; margin: 0;
+    color: var(--link);
+    letter-spacing: .01em;
+    word-spacing: -.14em;   /* tighten the gap between "Wye" and "Tide" */
+    white-space: nowrap;    /* never break "Wye Tide" across lines */
+  }
+
+  /* Yellow dot on the "i" of "Tide". CSS cannot address a tittle directly,
+     so the letter is drawn twice: the base "i" in the title color (--link), and an
+     absolutely-positioned duplicate in firefly yellow clipped to just its
+     top slice (the dot) sitting exactly on top. Only this one glyph is
+     overlaid, so the clip cannot affect neighboring letters. Nudge
+     --tittle-clip if the yellow bleeds onto the stem (higher = less shown). */
+  .tittle-i { position: relative; display: inline-block; --tittle-clip: 72%; }
+  .tittle-i > span {
+    position: absolute; left: 0; top: 0;
+    color: var(--icon-bright);
+    clip-path: inset(0 0 var(--tittle-clip) 0);
+    pointer-events: none;
+  }
+  .header-left { flex: 0 0 auto; }
+  .header-right { text-align: right; min-width: 0; }  
+  .header-controls { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+  select {
+    font: inherit; padding: 7px 10px; border: 1px solid var(--card-border);
+    border-radius: 6px; background: var(--card-bg); color: var(--text);
+    cursor: pointer;
+  }
+
+  /* Dark-theme toggle switch. */
+  .theme-switch { position: relative; display: inline-block; width: 38px; height: 22px; flex: none; }
+  .theme-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .theme-switch .slider {
+    position: absolute; inset: 0; background: var(--card-border);
+    border-radius: 999px; cursor: pointer; transition: background-color .2s;
+  }
+  .theme-switch .slider::before {
+    content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px;
+    background: var(--card-bg); border-radius: 50%;
+    transition: transform .2s, background-color .2s, box-shadow .2s;
+  }
+  .theme-switch input:checked + .slider { background: var(--icon-bright); }
+  .theme-switch input:checked + .slider::before {
+    transform: translateX(16px); background: #0a1f1d;
+    box-shadow: 0 0 6px 1px var(--icon-bright);
+  }
+
+  /* Unified layout: Weather hero on top, AQI | UV beneath, then Tide.
+     Grid is a vertical flex column capped at 500px. All children stretch
+     to that full width, so the AQI/UV row's combined width always equals
+     the Weather card's. */
+  .grid {
+    display: flex; flex-direction: column; gap: var(--gap);
+    max-width: 500px;
+  }
+  /* AQI/UV row: two equal cards. flex:1 1 0 => equal width; shared row +
+     default align-items:stretch => equal height. */
+  .col2 { display: flex; gap: 10px; }
+  .col2 .card { flex: 1 1 0; min-width: 0; }
+
+  .card {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 10px; box-shadow: var(--card-shadow);
+    padding: var(--pad); display: flex; flex-direction: column;
+    position: relative;
+    transition: background-color .25s ease, border-color .25s ease, box-shadow .25s ease;
+  }
+  .card h2 { margin: 0 0 10px; font-size: 1rem; }
+  .card .body { flex: 1; }
+
+  /* Bottom toggle bar (INERT in this build; kept for a possible future
+     collapse feature — the display:none below overrides its own flex). */
+  .card-toggle {
+    margin: 12px calc(var(--pad) * -1) calc(var(--pad) * -1);
+    padding: 8px var(--pad) 10px;
+    border-top: 1px solid var(--card-border);
+    border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;
+    display: flex; justify-content: flex-end; align-items: center;
+    cursor: pointer; user-select: none; color: var(--card-border);
+  }
+  .card-toggle:hover { color: var(--muted); background: var(--card-hover); }
+  .chev { font-size: .8rem; display: inline-block; transition: transform .15s; }
+  .card.expanded .chev { transform: rotate(180deg); }
+
+  /* Detail always shown; collapsing is disabled (toggle hidden everywhere). */
+  .detail { display: block; }
+  .card-toggle { display: none; }
+  .detail > .row:first-child { margin-top: 4px; }
+
+  /* Top-right muted stat (weather high/low only; AQI/UV corners hidden). */
+  .corner {
+    position: absolute; top: 16px; right: var(--pad);
+    color: var(--muted); font-size: .85rem; text-align: right;
+  }
+  #aqi-card .corner, #uv-card .corner { display: none; }
+
+  /* Top-right (i) info symbol + hover bubble (AQI / UV recommendations). */
+  .info { position: absolute; top: 12px; right: var(--pad); line-height: 0; }
+  .info-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 1px solid var(--card-border); color: var(--muted);
+    font: 700 italic .72rem Georgia, "Times New Roman", serif;
+    cursor: help; user-select: none;
+  }
+  .info-icon:hover { border-color: var(--muted); color: var(--text); }
+  .info-pop {
+    position: absolute; top: 24px; right: 0;
+    width: max-content; max-width: min(240px, 70vw);
+    background: #1f2937; color: #fff;
+    padding: 9px 11px; border-radius: 8px;
+    font: 400 .78rem/1.45 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    text-align: left; box-shadow: 0 6px 20px rgba(0,0,0,.3);
+    z-index: 20; display: none;
+  }
+  .info:hover .info-pop, .info:focus-within .info-pop { display: block; }
+
+  /* Weather hero, now split into two columns (left = feels like, right =
+     sun and moon), separated by a vertical rule. */
+  .hero-split { display: flex; padding: 6px 0 2px; gap: 14px; }
+  .hero-left {
+    flex: 1 1 0; min-width: 0; text-align: center; padding: 0;
+  }
+  .hero-divider { flex: 0 0 1px; width: 1px; background: var(--divider); align-self: stretch; }
+  .hero-right { flex: 1 1 0; min-width: 0; text-align: left; padding-top: 2px; }
+  .hero-right .hero-cap { text-align: left; }
+  .hero-right .row { font-size: .82rem; padding: 3px 0; }
+
+  .hero-cap {
+    color: var(--muted); font-size: .72rem; text-transform: uppercase;
+    letter-spacing: .04em; margin-bottom: 2px;
+  }
+  .conditions { color: var(--value-color); font-size: 1rem; margin-top: 10px; }
+  .haz { color: var(--hazard); font-weight: 600; margin-top: 8px; }
+  .haz .haz-link { color: var(--hazard); text-decoration: underline; cursor: pointer; }
+  .haz .haz-link:hover { color: var(--hazard-hover); }
+  .haz-none { color: var(--haz-good); margin-top: 8px; font-size: .9rem; }
+  .haz-none.muted { color: var(--muted); font-weight: 400; }
+
+  /* AQI / UV centered value block. */
+  .hero-sm { text-align: center; padding: 4px 0 2px; }
+
+  /* UV sparkline: full card width, fixed height, stretched via viewBox. */
+  .uv-spark { margin: 10px 0 2px; line-height: 0; }
+  .uv-spark svg { width: 100%; height: 30px; display: block; overflow: visible; }
+
+  /* The AQI and UV cards are already equal height (flex row, align-items:
+     stretch), but their contents ran to different depths. AQI's rows ended
+     high while UV's ran to the floor. Make each body a flex column and pin
+     the data to the bottom, so the last row of each card lands on the same
+     line and the leftover air collects under the colored tag instead. */
+  #aqi-card .body, #uv-card .body { display: flex; flex-direction: column; }
+  #aqi-card .detail { margin-top: auto; }
+  #uv-card .uv-spark { margin-top: auto; }   /* spark + detail travel together */
+  #aqi-card .hero-sm, #uv-card .hero-sm { padding-bottom: 8px; }
+
+  /* Main values. */
+  .big { font-size: 2.4rem; font-weight: 600; line-height: 1.1; color: var(--value-color); }
+  .hero-left .big { font-size: 2.4rem; }
+
+  .row { display: flex; justify-content: space-between; padding: 2px 0; font-size: .9rem; }
+  .row span:first-child { color: var(--muted); }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .8rem; color: #fff; }
+  .dot {
+    display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+    vertical-align: middle; margin-left: 6px; cursor: help;
+    box-shadow: 0 0 0 1px var(--dot-ring);
+  }
+  .hazard { color: var(--hazard); font-weight: 600; }
+  .error { color: var(--hazard); font-size: .88rem; background: var(--error-bg); border: 1px solid var(--error-border); padding: 10px; border-radius: 6px; }
+  .muted { color: var(--muted); font-size: .85rem; }
+
+  .page-footer { margin-top: 20px; max-width: 500px; }
+  .page-updated { font-size: .75rem; color: var(--muted); }
+  .page-sources { font-size: .75rem; color: var(--muted); margin-top: 4px; }
+  .page-sources a { color: var(--link); text-decoration: none; }
+  .page-sources a:hover { text-decoration: underline; }
+
+  /* ---- Narrow screens: cosmetic only (layout is already stacked). ---- */
+  @media (max-width: 620px) {
+    :root { --pad: 12px; }
+    body { padding: 14px; }
+    .corner { font-size: .78rem; top: 14px; }
+    header { gap: 10px; }
+    /* Give the title the room it needs; the dropdown gives it up. */
+    select { max-width: 120px; padding: 6px 6px; font-size: .85rem; }
+    .hero-split { gap: 10px; }
+    .hero-left .big { font-size: 2rem; }
+    .hero-right .row { font-size: .76rem; }
+  }
+</style>
+
+<header>
+  <div class="header-left">
+    <h1>Wye T<span class="tittle-i">i<span aria-hidden="true">i</span></span>de</h1>
+  </div>
+  <div class="header-right">
+    <div class="header-controls">
+      <label class="theme-switch" title="Toggle dark theme">
+        <input type="checkbox" id="theme-toggle" checked>
+        <span class="slider"></span>
+      </label>
+      <select id="location"></select>
+    </div>
+  </div>
+</header>
+
+<div class="grid">
+  <section class="card" id="weather-card">
+    <h2>Weather</h2>
+    <div class="body muted">Loading&hellip;</div>
+    <div class="card-toggle"><span class="chev">&#9662;</span></div>
+  </section>
+
+  <div class="col2">
+    <section class="card" id="aqi-card">
+      <h2>Air Quality</h2>
+      <div class="body muted">Loading&hellip;</div>
+      <div class="card-toggle"><span class="chev">&#9662;</span></div>
+    </section>
+
+    <section class="card" id="uv-card">
+      <h2>UV Index</h2>
+      <div class="body muted">Loading&hellip;</div>
+      <div class="card-toggle"><span class="chev">&#9662;</span></div>
+    </section>
+  </div>
+
+  <section class="card" id="tide-card">
+    <h2>Tide</h2>
+    <div class="body muted">Loading&hellip;</div>
+    <div class="card-toggle"><span class="chev">&#9662;</span></div>
+  </section>
+</div>
+
+<footer class="page-footer">
+  <div class="page-updated" id="updated"></div>
+  <div class="page-sources">
+    Sources:
+    <a id="weather-link" href="#" target="_blank" rel="noopener">National Weather Service</a> &middot;
+    <a href="https://open-meteo.com/en/docs/air-quality-api" target="_blank" rel="noopener">Open-Meteo</a> &middot;
+    <a href="https://sunrise-sunset.org/" target="_blank" rel="noopener">Sunrise-Sunset.org</a> &middot;
+    <a id="moon-link" href="https://tidesandcurrents.noaa.gov/" target="_blank" rel="noopener">NOAA Tides</a>
+  </div>
+</footer>
+
+<script>
+
+const LOCATIONS = [
+  { name: "Laurel, MD",           label: "Patuxent",     lat: 39.053,  lon: -76.813,  zip: "20708", tideStation: null },
+  { name: "Washington, DC",       label: "Smithsonian",  lat: 38.8906, lon: -77.0242, zip: "20560", tideStation: "8594900" },
+  { name: "Edgewater, MD",        lat: 38.9557, lon: -76.5502, zip: "21037", tideStation: "8575512" },
+  { name: "Chesapeake Beach, MD", lat: 38.6871, lon: -76.5330, zip: "20732", tideStation: "8576363" },
+  { name: "Huntingtown, MD",      lat: 38.6321, lon: -76.5936, zip: "20639", tideStation: null },
+  { name: "Upper Marlboro, MD",   lat: 38.816,  lon: -76.750,  zip: "20772", tideStation: null },
+  { name: "Wye Island, MD",       lat: 38.8846, lon: -76.1865, zip: "21617", tideStation: "8571892" },
+];
+
+const DEFAULT_INDEX = Math.max(0, LOCATIONS.findIndex(l => l.name === "Upper Marlboro, MD"));
+let current = LOCATIONS[DEFAULT_INDEX];
+
+const dropLabel = (loc) => loc.label || loc.name.replace(/,\s*[A-Z]{2}$/, "");
+
+// Full property objects for the currently-displayed hazards, indexed to match
+// the rendered links; openHazard() reads from here on click.
+let activeAlerts = [];
+
+const el = (sel) => document.querySelector(sel);
+const now = () => new Date().toLocaleTimeString();
+const cToF = (c) => (c === null || c === undefined) ? null : Math.round(c * 9 / 5 + 32);
+const r1 = (v) => (v === null || v === undefined) ? null : Math.round(v * 10) / 10;
+
+function setLoading(cardId) {
+  el(`#${cardId} .body`).innerHTML = '<span class="muted">Loading&hellip;</span>';
+}
+function setError(cardId, msg) {
+  el(`#${cardId} .body`).innerHTML = `<div class="error">${msg}</div>`;
+}
+
+/* Keeps the footer source links pointed at the selected location. */
+function syncLocationChrome() {
+  el('#weather-link').href =
+    `https://forecast.weather.gov/MapClick.php?lon=${current.lon}&lat=${current.lat}`;
+  el('#moon-link').href = current.tideStation
+    ? `https://tidesandcurrents.noaa.gov/waterlevels.html?id=${current.tideStation}`
+    : 'https://tidesandcurrents.noaa.gov/';
+}
+
+/* Dark-theme toggle. Dark ("lightning bug") is the default; unchecking the
+   switch adds .light to <html>. State lives only in memory for this load —
+   no storage APIs are used. */
+function applyTheme() {
+  document.documentElement.classList.toggle('light', !el('#theme-toggle').checked);
+}
+
+function tempCategory(f) {
+  if (f < 32)  return ['Freezing',  '#8e44ad'];
+  if (f < 50)  return ['Cold',      '#3b82f6'];
+  if (f < 70)  return ['Moderate',  '#d4a017'];
+  if (f < 79)  return ['Temperate', '#10b981'];
+  if (f < 90)  return ['Hot',       '#e67e22'];
+  if (f < 100) return ['Very Hot',  '#c0392b'];
+  return ['Extreme', '#ec4899'];
+}
+
+function shortHour(h) {
+  const ap = h < 12 ? 'am' : 'pm';
+  return `${h % 12 === 0 ? 12 : h % 12}${ap}`;
+}
+function dayPeak(times, vals, today) {
+  let max = null, maxTime = null;
+  (times || []).forEach((t, i) => {
+    if (t.slice(0, 10) !== today) return;
+    const v = vals?.[i];
+    if (v === null || v === undefined) return;
+    if (max === null || v > max) { max = v; maxTime = t; }
+  });
+  const hour = maxTime ? shortHour(Number(maxTime.slice(11, 13))) : '';
+  return { max, hour };
+}
+
+/* NWS observation cloudLayers -> human text. cloudLayers is an array of
+   layers, each with an `amount` sky-cover code. We report the greatest
+   coverage present (e.g. a BKN layer beneath an OVC layer reads "Overcast").
+   Empty array => clear sky => "Clear"; missing field (null) => em-dash. */
+function cloudText(layers) {
+  if (!Array.isArray(layers)) return '\u2014';
+  if (!layers.length) return 'Clear';
+  const rank  = { CLR: 0, SKC: 0, FEW: 1, SCT: 2, BKN: 3, OVC: 4, VV: 5 };
+  const label = { CLR: 'Clear', SKC: 'Clear', FEW: 'Few', SCT: 'Scattered',
+                  BKN: 'Broken', OVC: 'Overcast', VV: 'Obscured' };
+  let top = null, topRank = -1;
+  layers.forEach(l => {
+    const a = l?.amount;
+    if (a == null) return;
+    const rk = rank[a] ?? -1;
+    if (rk > topRank) { topRank = rk; top = a; }
+  });
+  return top ? (label[top] || top) : 'Clear';
+}
+
+/* HTML escape for text written into the alert popup window / title attrs. */
+function esc(s) {
+  return (s == null ? '' : String(s))
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/* Open a new window showing the full NWS alert text. We render the alert's
+   own description/instruction (already fetched) rather than linking out,
+   because NWS has no reliable public per-alert HTML page. */
+function openHazard(i) {
+  const h = activeAlerts[i];
+  if (!h) return;
+  const w = window.open('about:blank', '_blank');
+  if (!w) return;                 // popup blocked
+  w.opener = null;                // sever opener (defensive)
+  const fmt = (iso) => {
+    try { return new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York' }); }
+    catch (e) { return esc(iso); }
+  };
+  const meta = [
+    h.severity  && `Severity: ${esc(h.severity)}`,
+    h.urgency   && `Urgency: ${esc(h.urgency)}`,
+    h.certainty && `Certainty: ${esc(h.certainty)}`
+  ].filter(Boolean).join(' &middot; ');
+
+  w.document.write(`<!doctype html><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>${esc(h.event || 'NWS Alert')}</title>
+    <style>
+      body { font-family: system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+             max-width: 720px; margin: 28px auto; padding: 0 18px;
+             color: #1a1a1a; line-height: 1.5; }
+      h1 { font-size: 1.3rem; margin: 0 0 6px; color: #b91c1c; }
+      .lead { font-size: 1rem; font-weight: 600; margin: 0 0 12px; }
+      .meta { color: #555; font-size: .88rem; margin-bottom: 20px; }
+      h2 { font-size: 1rem; margin: 22px 0 6px; }
+      p.body-text { white-space: pre-wrap; margin: 0; }
+      a { color: #2b6cb0; }
+    </style>
+    <h1>${esc(h.event || 'NWS Alert')}</h1>
+    ${h.headline ? `<p class="lead">${esc(h.headline)}</p>` : ''}
+    <div class="meta">
+      ${meta}
+      ${h.areaDesc  ? `<br>Area: ${esc(h.areaDesc)}` : ''}
+      ${h.effective ? `<br>Effective: ${fmt(h.effective)}` : ''}
+      ${h.expires   ? `<br>Expires: ${fmt(h.expires)}` : ''}
+    </div>
+    ${h.description ? `<h2>Details</h2><p class="body-text">${esc(h.description)}</p>` : ''}
+    ${h.instruction ? `<h2>Precautionary / preparedness actions</h2><p class="body-text">${esc(h.instruction)}</p>` : ''}
+    <p style="margin-top:26px"><a href="https://forecast.weather.gov/" target="_blank" rel="noopener">National Weather Service &nearr;</a></p>
+  `);
+  w.document.close();
+}
+
+/* Top-right (i) badge with a hover/focus recommendation bubble. */
+function infoBadge(text) {
+  if (!text) return '';
+  return `<span class="info"><span class="info-icon" tabindex="0" role="img" aria-label="Recommendation">i</span><span class="info-pop">${esc(text)}</span></span>`;
+}
+
+/* Hazard tinting (INERT — retained from earlier builds). paintHazards()
+   queries [data-hazcat] spans, which the current hazard rendering does not
+   emit, so it is a no-op. Left in place rather than removed. */
+const hazShared = { tempColor: null, aqiColor: null };
+function paintHazards() {
+  document.querySelectorAll('#weather-card .haz [data-hazcat]').forEach(sp => {
+    const cat = sp.dataset.hazcat;
+    const c = cat === 'aqi' ? hazShared.aqiColor
+            : cat === 'temp' ? hazShared.tempColor : null;
+    sp.style.color = c || '';
+  });
+}
+
+/* Small sun glyph (horizon + rising/setting chevron), used next to the
+   first-light / sunrise / sunset / last-light times. "dim" = twilight
+   (first/last light); bright = the sunrise/sunset instant itself. */
+function sunIcon(dir, dim) {
+  const c = dim ? 'var(--icon-dim)' : 'var(--icon-bright)';
+  const arrow = dir === 'up'
+    ? `<path d="M8 7V2.4M5.6 4.8L8 2.4l2.4 2.4" style="fill:none;stroke:${c}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>`
+    : `<path d="M8 2.4V7M5.6 4.6L8 7l2.4-2.4" style="fill:none;stroke:${c}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>`;
+  return `<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" style="vertical-align:middle;margin-left:5px">
+    <path d="M3.3 11.3a4.7 4.7 0 0 1 9.4 0" style="fill:none;stroke:${c}" stroke-width="1.3"/>
+    <line x1="1" y1="11.3" x2="15" y2="11.3" style="stroke:${c}" stroke-width="1.1"/>
+    ${arrow}
+  </svg>`;
+}
+
+/* =========================================================================
+   WEATHER 
+   ========================================================================= */
+function moonPhase(date) {
+  const synodic = 29.53058867;
+  const knownNew = Date.UTC(2000, 0, 6, 18, 14) / 86400000;
+  let age = ((date.getTime() / 86400000) - knownNew) % synodic;
+  if (age < 0) age += synodic;
+  const names = [
+    'New Moon', 'Waxing Crescent', 'First Quarter', 'Waxing Gibbous',
+    'Full Moon', 'Waning Gibbous', 'Last Quarter', 'Waning Crescent'
+  ];
+  const idx = Math.floor(((age / synodic) * 8) + 0.5) % 8;
+  const illum = Math.round((1 - Math.cos(2 * Math.PI * age / synodic)) / 2 * 100);
+  const waxing = age < synodic / 2;
+  return { name: names[idx], illum, age, waxing };
+}
+
+function moonSVG(illumFrac, waxing, size = 40) {
+  const r = size / 2, cx = r, cy = r;
+  const rx = r * Math.abs(1 - 2 * illumFrac);
+  let d;
+  if (waxing) {
+    const tSweep = illumFrac < 0.5 ? 0 : 1;
+    d = `M ${cx} ${cy - r} A ${r} ${r} 0 0 1 ${cx} ${cy + r} A ${rx} ${r} 0 0 ${tSweep} ${cx} ${cy - r} Z`;
+  } else {
+    const tSweep = illumFrac < 0.5 ? 1 : 0;
+    d = `M ${cx} ${cy - r} A ${r} ${r} 0 0 0 ${cx} ${cy + r} A ${rx} ${r} 0 0 ${tSweep} ${cx} ${cy - r} Z`;
+  }
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true">
+    <circle cx="${cx}" cy="${cy}" r="${r}" style="fill:var(--moon-dark)"/>
+    <path d="${d}" style="fill:var(--moon-lit)"/>
+  </svg>`;
+}
+
+function moonIconInline(mp) {
+  return `<span style="display:inline-flex;vertical-align:middle;margin-left:6px" title="${esc(mp.name)}">${moonSVG(mp.illum / 100, mp.waxing, 16)}</span>`;
+}
+
+/* Builds the "Sun and Moon" right-column HTML: header, four sun time rows
+   (fetched from sunrise-sunset.org), and a moon row (illumination % and 
+   phase icon). Moon phase is computed locally so it always renders even 
+   if the sun fetch fails. */
+async function sunMoonBlock() {
+  const { lat, lon } = current;
+  const mp = moonPhase(new Date());
+  const moonRow = `<div class="row"><span>Moon</span><span>${mp.illum}%${moonIconInline(mp)}</span></div>`;
+  const cap = `<div class="hero-cap">Sun and Moon</div>`;
+
+  try {
+    const etDate = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    const url = `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&formatted=0&date=${etDate}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.status !== 'OK') throw new Error(data.status || 'API error');
+    const r = data.results;
+
+    const et = (iso) => iso
+      ? new Date(iso).toLocaleTimeString('en-US', {
+          timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit'
+        })
+      : '\u2014';
+
+    return `
+      ${cap}
+      <div class="row"><span>First light</span><span>${et(r.civil_twilight_begin)}${sunIcon('up', true)}</span></div>
+      <div class="row"><span>Sunrise</span><span>${et(r.sunrise)}${sunIcon('up', false)}</span></div>
+      <div class="row"><span>Sunset</span><span>${et(r.sunset)}${sunIcon('down', false)}</span></div>
+      <div class="row"><span>Last light</span><span>${et(r.civil_twilight_end)}${sunIcon('down', true)}</span></div>
+      ${moonRow}
+    `;
+  } catch (err) {
+    return `
+      ${cap}
+      <div class="row"><span>Sun</span><span class="hazard">Failed: ${err.message}</span></div>
+      ${moonRow}
+    `;
+  }
+}
+
+/* The NWS chain (points -> stations -> observations). Memoized per location
+   so any card that needs the observation walks the chain once per refresh
+   rather than repeating three round-trips; loadAll() clears the cache each
+   cycle so the observation never goes stale. Currently only the Weather
+   card consumes it. */
+const nwsCache = new Map();
+function nwsBundle(lat, lon) {
+  const key = `${lat},${lon}`;
+  if (!nwsCache.has(key)) {
+    nwsCache.set(key, (async () => {
+      const pRes = await fetch(`https://api.weather.gov/points/${lat},${lon}`);
+      if (!pRes.ok) throw new Error(`points lookup returned HTTP ${pRes.status}`);
+      const { forecast, observationStations } = (await pRes.json()).properties;
+
+      const sRes = await fetch(observationStations);
+      if (!sRes.ok) throw new Error(`stations returned HTTP ${sRes.status}`);
+      const stationId = (await sRes.json()).features?.[0]?.properties?.stationIdentifier;
+      if (!stationId) throw new Error('no observation station found');
+
+      const oRes = await fetch(`https://api.weather.gov/stations/${stationId}/observations?limit=12`);
+      if (!oRes.ok) throw new Error(`observation returned HTTP ${oRes.status}`);
+      const oFeats = (await oRes.json()).features || [];
+      if (!oFeats.length) throw new Error('no observations found');
+      return { forecast, oFeats };
+    })());
+  }
+  return nwsCache.get(key);
+}
+
+async function loadWeather() {
+  const cardId = 'weather-card';
+  setLoading(cardId);
+  const { lat, lon } = current;
+  try {
+    const { forecast, oFeats } = await nwsBundle(lat, lon);
+    const obs = oFeats[0].properties;
+    // Pressure history (Pa + timestamp) for the trend arrow, newest first.
+    const presSeries = oFeats
+      .map(f => ({ t: f.properties?.timestamp, pa: f.properties?.barometricPressure?.value }))
+      .filter(o => o.t && o.pa != null);
+
+    const fRes = await fetch(forecast);
+    if (!fRes.ok) throw new Error(`forecast returned HTTP ${fRes.status}`);
+    const periods = (await fRes.json()).properties.periods;
+    const period = periods[0];
+    const dayPeriod   = periods.find(p => p.isDaytime === true);
+    const nightPeriod = periods.find(p => p.isDaytime === false);
+
+    // Hazards -> deduped array of full property objects (by event name).
+    let hazards = null;
+    try {
+      const aRes = await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`);
+      if (aRes.ok) {
+        const feats = (await aRes.json()).features || [];
+        const seen = new Set();
+        hazards = [];
+        feats.forEach(f => {
+          const p = f.properties; const ev = p?.event;
+          if (!ev || seen.has(ev)) return;
+          seen.add(ev); hazards.push(p);
+        });
+      }
+    } catch (e) { /* null -> "unavailable" */ }
+
+    // Sun/moon block is an independent fetch; awaited here so the whole
+    // card body is written in one pass (no race on #weather-card .body).
+    const sunMoon = await sunMoonBlock();
+
+    if (current.lat !== lat || current.lon !== lon) return; // stale guard
+
+    const airF = cToF(obs.temperature?.value);
+
+    let feelC = null, feelKind = null;
+    if (obs.windChill?.value !== null && obs.windChill?.value !== undefined) {
+      feelC = obs.windChill.value; feelKind = 'wind chill';
+    } else if (obs.heatIndex?.value !== null && obs.heatIndex?.value !== undefined) {
+      feelC = obs.heatIndex.value; feelKind = 'heat index';
+    }
+    const feelF = cToF(feelC);
+    const humidity = obs.relativeHumidity?.value;
+    const displayF = feelF ?? airF;
+
+    hazShared.tempColor = displayF !== null ? tempCategory(displayF)[1] : null;
+
+    const badge = (displayF !== null)
+      ? (() => { const [l, c] = tempCategory(displayF);
+                 return `<span class="badge" style="background:${c}">${l}</span>`; })()
+      : '';
+
+    const cap = (feelF !== null) ? `Feels like &middot; ${feelKind}` : 'Air temperature';
+
+    const conditions = obs.textDescription || period.shortForecast || '\u2014';
+    const pop = period.probabilityOfPrecipitation?.value;
+    const popTxt = `${pop != null ? pop : 0}%`;
+
+    // Precip TYPE derived from the forecast icon token (heuristic, not a
+    // structured field). Falls back to generic "rain" when undetectable.
+    const precipLabel = (() => {
+      const s = (period.icon || '').toLowerCase();
+      const parts = [];
+      if (/rain|tsra|showers/.test(s)) parts.push('rain');
+      if (/fzra/.test(s))              parts.push('freezing rain');
+      if (/sleet/.test(s))             parts.push('sleet');
+      if (/snow/.test(s))              parts.push('snow');
+      return parts.length ? `Chance ${parts.join('/')}` : 'Chance rain';
+    })();
+
+    // Cloud cover -> text from the observation's cloudLayers (no extra fetch).
+    const cloudRow = `<div class="row"><span>Cloud cover</span><span>${cloudText(obs.cloudLayers)}</span></div>`;
+
+    // Gust: OBSERVED (period forecast has no gust field). Hidden when null.
+    let gustMph = null;
+    const gVal = obs.windGust?.value;
+    if (gVal != null) {
+      const u = obs.windGust?.unitCode || '';
+      gustMph = u.includes('km_h') ? gVal * 0.621371
+              : u.includes('m_s')  ? gVal * 2.236936
+              : gVal;
+    }
+    const gustRow = `<div class="row"><span>Gusts</span><span>${gustMph != null ? Math.round(gustMph) : 0} mph</span></div>`;
+
+    // Barometric pressure -> inHg (Pa / 3386.389). Guarded with em-dash.
+    const paVal = obs.barometricPressure?.value;
+    const inHg = paVal != null ? (paVal / 3386.389).toFixed(2) : null;
+    // Trend: newest vs. the reading closest to 3h earlier (>=1h old).
+    // +/-0.02 inHg deadband. Up/down/steady; blank when history is too short.
+    let trendArrow = '';
+    if (presSeries.length >= 2) {
+      const newest = presSeries[0];
+      const target = new Date(newest.t).getTime() - 3 * 3600000;
+      let prior = null, best = Infinity;
+      presSeries.slice(1).forEach(o => {
+        const d = Math.abs(new Date(o.t).getTime() - target);
+        if (d < best) { best = d; prior = o; }
+      });
+      if (prior && (new Date(newest.t) - new Date(prior.t)) >= 3600000) {
+        const dIn = (newest.pa - prior.pa) / 3386.389;
+        trendArrow = dIn > 0.02 ? ' \u2191' : dIn < -0.02 ? ' \u2193' : ' \u2192';
+      }
+    }
+    const pressureRow = `<div class="row"><span>Pressure</span><span>${inHg != null ? inHg + ' inHg' + trendArrow : '\u2014'}</span></div>`;
+
+    let hazHtml;
+    if (hazards === null) {
+      hazHtml = `<div class="haz-none muted">Hazards unavailable</div>`;
+    } else if (hazards.length === 0) {
+      hazHtml = `<div class="haz-none">No active hazards</div>`;
+    } else {
+      activeAlerts = hazards;
+      hazHtml = `<div class="haz">` + hazards.map((h, i) =>
+        `<a class="haz-link" href="#" data-i="${i}">${esc(h.event)}</a>`
+      ).join('<br>') + `</div>`;
+    }
+
+    const highTxt = dayPeriod   ? `${dayPeriod.temperature}&deg;${dayPeriod.temperatureUnit}`   : '\u2014';
+    const lowTxt  = nightPeriod ? `${nightPeriod.temperature}&deg;${nightPeriod.temperatureUnit}` : '\u2014';
+    const quickRef = `${highTxt}&nbsp;/&nbsp;${lowTxt}`;
+
+    const airRow = (feelF !== null)
+      ? `<div class="row"><span>Air temperature</span><span>${airF ?? '\u2014'}&deg;F</span></div>`
+      : '';
+
+    el(`#${cardId} .body`).innerHTML = `
+      <div class="corner">${quickRef}</div>
+      <div class="hero-split">
+        <div class="hero-left">
+          <div class="hero-cap">${cap}</div>
+          <div class="big">${displayF ?? '\u2014'}&deg;F</div>
+          ${badge}
+          <div class="conditions">${conditions}</div>
+          ${hazHtml}
+        </div>
+        <div class="hero-divider"></div>
+        <div class="hero-right">
+          ${sunMoon}
+        </div>
+      </div>
+      <div class="detail">
+        ${airRow}
+        <div class="row"><span>Humidity</span><span>${humidity != null ? Math.round(humidity) + '%' : '\u2014'}</span></div>
+        <div class="row"><span>Wind</span><span>${period.windSpeed} ${period.windDirection || ''}</span></div>
+        ${gustRow}
+        <div class="row"><span>${precipLabel}</span><span>${popTxt}</span></div>
+        ${cloudRow}
+        ${pressureRow}
+      </div>
+    `;
+
+    // Wire hazard links (delegated per-render; index maps into activeAlerts).
+    el(`#${cardId} .body`).querySelectorAll('.haz-link').forEach(a => {
+      a.addEventListener('click', (e) => { e.preventDefault(); openHazard(Number(a.dataset.i)); });
+    });
+    paintHazards();
+  } catch (err) {
+    setError(cardId, `NWS fetch failed: ${err.message}`);
+  }
+}
+
+/* =========================================================================
+   AIR QUALITY 
+   ========================================================================= */
+function pm25Sev(v) {
+  if (v == null) return null;
+  if (v <= 9.0)   return ['#00a65a', 'Good'];
+  if (v <= 35.4)  return ['#d4a017', 'Moderate'];
+  if (v <= 55.4)  return ['#e67e22', 'Unhealthy (sensitive)'];
+  if (v <= 125.4) return ['#c0392b', 'Unhealthy'];
+  if (v <= 225.4) return ['#8e44ad', 'Very Unhealthy'];
+  return ['#7e0023', 'Hazardous'];
+}
+function pm10Sev(v) {
+  if (v == null) return null;
+  if (v <= 54)  return ['#00a65a', 'Good'];
+  if (v <= 154) return ['#d4a017', 'Moderate'];
+  if (v <= 254) return ['#e67e22', 'Unhealthy (sensitive)'];
+  if (v <= 354) return ['#c0392b', 'Unhealthy'];
+  if (v <= 424) return ['#8e44ad', 'Very Unhealthy'];
+  return ['#7e0023', 'Hazardous'];
+}
+function ozoneSev(v) {
+  if (v == null) return null;
+  if (v <= 106) return ['#00a65a', 'Good'];
+  if (v <= 137) return ['#d4a017', 'Moderate'];
+  if (v <= 167) return ['#e67e22', 'Unhealthy (sensitive)'];
+  if (v <= 206) return ['#c0392b', 'Unhealthy'];
+  return ['#8e44ad', 'Very Unhealthy'];
+}
+const sevDot = (sev) =>
+  sev ? ` <span class="dot" style="background:${sev[0]}" title="${sev[1]}"></span>` : '';
+
+function aqiCategory(aqi) {
+  if (aqi <= 50)  return ['Good', '#00a65a'];
+  if (aqi <= 100) return ['Moderate', '#d4a017'];
+  if (aqi <= 150) return ['Sensitive', '#e67e22'];
+  if (aqi <= 200) return ['Unhealthy', '#c0392b'];
+  if (aqi <= 300) return ['Very Unhealthy', '#8e44ad'];
+  return ['Hazardous', '#7e0023'];
+}
+const aqiDot = (v) => {
+  if (v == null) return '';
+  const [label, color] = aqiCategory(v);
+  return ` <span class="dot" style="background:${color}" title="${label}"></span>`;
+};
+
+/* Health guidance keyed off the day's PEAK AQI (EPA category advice). */
+function aqiAdvice(aqi) {
+  if (aqi == null) return '';
+  if (aqi <= 50)  return 'Air quality is good — no precautions needed.';
+  if (aqi <= 100) return 'Air quality is acceptable. Unusually sensitive people should consider limiting prolonged or strenuous outdoor exertion.';
+  if (aqi <= 150) return 'Sensitive groups (heart or lung disease, older adults, children, and those active outdoors) should limit prolonged or strenuous outdoor exertion.';
+  if (aqi <= 200) return 'Everyone should limit prolonged or strenuous outdoor exertion; sensitive groups should avoid it and stay indoors when possible.';
+  if (aqi <= 300) return 'Health alert: everyone should avoid prolonged or strenuous outdoor exertion; sensitive groups should remain indoors.';
+  return 'Health warning of emergency conditions: everyone should avoid all outdoor exertion and stay indoors.';
+}
+
+async function loadAqi() {
+  const cardId = 'aqi-card';
+  setLoading(cardId);
+  const { lat, lon } = current;
+  try {
+    const url = 'https://air-quality-api.open-meteo.com/v1/air-quality'
+      + `?latitude=${lat}&longitude=${lon}`
+      + '&current=us_aqi,pm2_5,pm10,ozone&hourly=us_aqi&timezone=America%2FNew_York';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const cur = data.current;
+    if (current.lat !== lat || current.lon !== lon) return;
+
+    const aqi = cur.us_aqi;
+    const [label, color] = aqi != null ? aqiCategory(aqi) : ['', '#94a3b8'];
+    if (aqi != null) { hazShared.aqiColor = color; paintHazards(); }
+    const badge = aqi != null ? `<span class="badge" style="background:${color}">${label}</span>` : '';
+
+    const today = (cur.time || '').slice(0, 10);
+    const { max: dayMax, hour: dayMaxHour } = dayPeak(data.hourly?.time, data.hourly?.us_aqi, today);
+    const maxRow = dayMax != null
+      ? `<div class="row"><span>Max (${dayMaxHour})</span><span>${dayMax}${aqiDot(dayMax)}</span></div>`
+      : `<div class="row"><span>Max</span><span>\u2014</span></div>`;
+
+    // Recommendation keyed off the PEAK value for the day (fall back to current).
+    const peak = dayMax ?? aqi;
+    const info = infoBadge(aqiAdvice(peak));
+
+    el(`#${cardId} .body`).innerHTML = `
+      ${info}
+      <div class="hero-sm">
+        <div class="big">${aqi ?? '\u2014'}</div>
+        ${badge}
+      </div>
+      <div class="detail">
+        ${maxRow}
+        <div class="row"><span>PM2.5</span><span>${cur.pm2_5 ?? '\u2014'}${sevDot(pm25Sev(cur.pm2_5))}</span></div>
+        <div class="row"><span>PM10</span><span>${cur.pm10 ?? '\u2014'}${sevDot(pm10Sev(cur.pm10))}</span></div>
+        <div class="row"><span>Ozone</span><span>${cur.ozone ?? '\u2014'}${sevDot(ozoneSev(cur.ozone))}</span></div>
+      </div>
+    `;
+  } catch (err) {
+    setError(cardId, `Open-Meteo AQI fetch failed: ${err.message}`);
+  }
+}
+
+/* =========================================================================
+   UV INDEX
+   ========================================================================= */
+function uvCategory(uv) {
+  if (uv < 3)  return ['Low', '#00a65a'];
+  if (uv < 6)  return ['Moderate', '#d4a017'];
+  if (uv < 8)  return ['High', '#e67e22'];
+  if (uv < 11) return ['Very High', '#c0392b'];
+  return ['Extreme', '#8e44ad'];
+}
+const uvDot = (v) => {
+  if (v == null) return '';
+  const [label, color] = uvCategory(v);
+  return ` <span class="dot" style="background:${color}" title="${label}"></span>`;
+};
+
+/* Protection advice keyed off the day's PEAK UV.
+   <3, 3-5, 6-7, 8+ bands (each higher band adds to the previous). */
+function uvAdvice(uv) {
+  if (uv == null) return '';
+  if (uv < 3) return 'Wear sunglasses and SPF 15+.';
+  if (uv < 6) return 'Wear a hat and sunglasses, apply SPF 15+, and seek shade around midday.';
+  if (uv < 8) return 'Wear a wide-brimmed hat, sunglasses, a sun shirt, and pants; apply SPF 15+ and seek shade.';
+  return 'Reduce sun exposure. Wear a wide-brimmed hat, sunglasses, a sun shirt, and pants; apply SPF 15+ and seek shade.';
+}
+
+/* Time to sunburn, from the current UV index. Physics: UV index 1 equals
+   25 mW/m2 of erythemally-weighted irradiance, and one minimal erythema
+   dose (MED) for untanned type-II skin is about 250 J/m2. So
+     seconds = 250 / (UVI * 0.025)  ->  minutes = 166.7 / UVI
+   Unprotected, no sunscreen. Below UV 1 there is effectively no burn risk. */
+function burnMinutes(uv) {
+  if (uv == null || uv < 1) return null;
+  return Math.round(166.7 / uv);
+}
+function burnText(uv) {
+  const m = burnMinutes(uv);
+  if (m == null) return 'No burn risk';
+  if (m >= 120) return '2 hr+';
+  if (m >= 60) {
+    const h = Math.floor(m / 60), r = m % 60;
+    return r ? `${h} hr ${r} min` : `${h} hr`;
+  }
+  return `${m} min`;
+}
+
+/* Sparkline of today's hourly UV curve. Polyline over the 24 hourly values,
+   filled beneath, with a dot marking the current hour. Drawn in a 0..100 x
+   0..30 viewBox and stretched to the card width via preserveAspectRatio. */
+function uvSparkline(times, vals, today, nowHour) {
+  const pts = [];
+  (times || []).forEach((t, i) => {
+    if (t.slice(0, 10) !== today) return;
+    const v = vals?.[i];
+    pts.push({ h: Number(t.slice(11, 13)), v: (v == null ? 0 : v) });
+  });
+  if (pts.length < 2) return '';
+
+  const W = 100, H = 30, top = 3;
+  const peak = Math.max(...pts.map(p => p.v), 1);
+  const x = (h) => (h / 23) * W;
+  const y = (v) => H - (v / peak) * (H - top);
+
+  const line = pts.map(p => `${x(p.h).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
+  const area = `${x(pts[0].h).toFixed(1)},${H} ${line} ${x(pts[pts.length - 1].h).toFixed(1)},${H}`;
+
+  const cur = pts.find(p => p.h === nowHour);
+  const marker = cur
+    ? `<circle cx="${x(cur.h).toFixed(1)}" cy="${y(cur.v).toFixed(1)}" r="2.2"
+         style="fill:var(--icon-bright);stroke:var(--card-bg)" stroke-width="1"/>`
+    : '';
+
+  return `<div class="uv-spark" title="Today's UV curve (midnight to midnight)">
+    <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+      <polygon points="${area}" style="fill:var(--icon-bright);opacity:.16"/>
+      <polyline points="${line}" style="fill:none;stroke:var(--icon-bright)"
+        stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"
+        vector-effect="non-scaling-stroke"/>
+      ${marker}
+    </svg>
+  </div>`;
+}
+
+/* Solar noon (sun's daily peak, i.e. when UV maxes) from sunrise-sunset.org.
+   Own try/catch so the rest of the card still renders if it fails. */
+async function solarNoonRow(lat, lon) {
+  try {
+    const etDate = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    const url = `https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&formatted=0&date=${etDate}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.status !== 'OK') throw new Error(data.status || 'API error');
+    const t = data.results?.solar_noon;
+    const txt = t
+      ? new Date(t).toLocaleTimeString('en-US', {
+          timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit'
+        })
+      : '\u2014';
+    return `<div class="row"><span>Solar noon</span><span>${txt}</span></div>`;
+  } catch (err) {
+    return `<div class="row"><span>Solar noon</span><span class="hazard">Failed</span></div>`;
+  }
+}
+
+async function loadUvOpenMeteo() {
+  const cardId = 'uv-card';
+  setLoading(cardId);
+  const { lat, lon } = current;
+  try {
+    const url = 'https://air-quality-api.open-meteo.com/v1/air-quality'
+      + `?latitude=${lat}&longitude=${lon}`
+      + '&current=uv_index&hourly=uv_index&timezone=America%2FNew_York';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const cur = data.current;
+    if (current.lat !== lat || current.lon !== lon) return;
+
+    const uv = cur.uv_index;
+    const [label, color] = uv != null ? uvCategory(uv) : ['', '#94a3b8'];
+    const badge = uv != null ? `<span class="badge" style="background:${color}">${label}</span>` : '';
+
+    const today = (cur.time || '').slice(0, 10);
+    const { max: dayMax, hour: dayMaxHour } = dayPeak(data.hourly?.time, data.hourly?.uv_index, today);
+    const maxRow = dayMax != null
+      ? `<div class="row"><span>Max (${dayMaxHour})</span><span>${r1(dayMax)}${uvDot(dayMax)}</span></div>`
+      : `<div class="row"><span>Max</span><span>\u2014</span></div>`;
+
+    // Recommendation keyed off the PEAK value for the day (fall back to current).
+    const peak = dayMax ?? uv;
+    const info = infoBadge(uvAdvice(peak));
+
+    // Sparkline of the day's curve, marker on the current ET hour.
+    const nowHour = Number(new Date().toLocaleString('en-US', {
+      timeZone: 'America/New_York', hour: '2-digit', hour12: false
+    }).slice(0, 2));
+    const spark = uvSparkline(data.hourly?.time, data.hourly?.uv_index, today, nowHour);
+
+    // Burn time keyed off the CURRENT UV (what matters if you step outside now).
+    const burnRow = `<div class="row"><span>Burn time</span><span>${burnText(uv)}</span></div>`;
+
+    // Independent fetch; awaited so the body is written in one pass.
+    const noonRow = await solarNoonRow(lat, lon);
+
+    if (current.lat !== lat || current.lon !== lon) return;
+
+    el(`#${cardId} .body`).innerHTML = `
+      ${info}
+      <div class="hero-sm">
+        <div class="big">${uv != null ? r1(uv) : '\u2014'}</div>
+        ${badge}
+      </div>
+      ${spark}
+      <div class="detail">
+        ${maxRow}
+        ${noonRow}
+        ${burnRow}
+      </div>
+    `;
+  } catch (err) {
+    setError(cardId, `Open-Meteo UV fetch failed: ${err.message}`);
+  }
+}
+
+/* =========================================================================
+   TIDE
+   ========================================================================= */
+function fmtClock(t) {
+  let [h, m] = t.slice(11, 16).split(':').map(Number);
+  const ap = h < 12 ? 'AM' : 'PM';
+  h = h % 12 || 12;
+  return `${h}:${String(m).padStart(2, '0')} ${ap}`;
+}
+
+async function loadTide() {
+  const cardId = 'tide-card';
+  setLoading(cardId);
+  const { lat, lon, tideStation } = current;
+
+  let tideRows;
+  if (!tideStation) {
+    tideRows = `<div class="row"><span>Tides</span><span class="muted">No tidal station</span></div>`;
+  } else {
+    try {
+      const isoToday = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+      const begin = isoToday.replace(/-/g, '');
+      const end = new Date(Date.now() + 86400000)
+        .toLocaleDateString('en-CA', { timeZone: 'America/New_York' }).replace(/-/g, '');
+      const url = 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter'
+        + '?product=predictions&application=wye-tide'
+        + `&station=${tideStation}&begin_date=${begin}&end_date=${end}`
+        + '&datum=MLLW&time_zone=lst_ldt&units=english&interval=hilo&format=json';
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message || 'NOAA error');
+      const preds = data.predictions || [];
+      if (!preds.length) throw new Error('no predictions returned');
+
+      const nowStr = new Date().toLocaleString('sv-SE', { timeZone: 'America/New_York' }).slice(0, 16);
+      const nextEvent = preds.find(p => p.t > nowStr);
+      const nextHigh  = preds.find(p => p.type === 'H' && p.t > nowStr);
+      const nextLow   = preds.find(p => p.type === 'L' && p.t > nowStr);
+
+      const stateTxt = nextEvent
+        ? (nextEvent.type === 'H' ? 'Rising (incoming)' : 'Falling (outgoing)')
+        : '\u2014';
+      const line = (p) => {
+        if (!p) return '\u2014';
+        const day = p.t.slice(0, 10) !== isoToday ? ' (tmrw)' : '';
+        const ht = p.v ? ` &middot; ${Number(p.v).toFixed(1)} ft` : '';
+        return `${fmtClock(p.t)}${day}${ht}`;
+      };
+
+      if (current.lat !== lat || current.lon !== lon) return;
+      tideRows = `
+        <div class="row"><span>Current tide</span><span>${stateTxt}</span></div>
+        <div class="row"><span>Next high tide</span><span>${line(nextHigh)}</span></div>
+        <div class="row"><span>Next low tide</span><span>${line(nextLow)}</span></div>`;
+    } catch (err) {
+      const hint = /failed to fetch/i.test(err.message)
+        ? ' \u2014 possible CORS block from NOAA.' : '';
+      tideRows = `<div class="row"><span>Tides</span><span class="hazard">Failed: ${err.message}${hint}</span></div>`;
+    }
+  }
+
+  if (current.lat !== lat || current.lon !== lon) return;
+  el(`#${cardId} .body`).innerHTML = `<div class="detail">${tideRows}</div>`;
+}
+
+/* =========================================================================
+   Expand / collapse (INERT in this build; toggle bars are CSS-hidden).
+   Kept wired for a possible future collapse feature.
+   ========================================================================= */
+const closeCards = (ids) => ids.forEach(id => {
+  const c = el('#' + id); if (c) c.classList.remove('expanded');
+});
+
+function toggleCard(id) {
+  const card = el('#' + id);
+  if (!card) return;
+  const willOpen = !card.classList.contains('expanded');
+  if (willOpen) {
+    const others = ['weather-card', 'aqi-card', 'uv-card', 'tide-card'].filter(x => x !== id);
+    closeCards(others);
+  }
+  card.classList.toggle('expanded');
+}
+
+document.querySelectorAll('.card-toggle').forEach(t => {
+  t.addEventListener('click', () => toggleCard(t.closest('.card').id));
+});
+
+/* =========================================================================
+   Loading + scheduling.
+   ========================================================================= */
+const sources = [loadWeather, loadAqi, loadUvOpenMeteo, loadTide];
+
+async function loadAll() {
+  nwsCache.clear();   // force a fresh observation each cycle
+  await Promise.allSettled(sources.map(fn => fn()));
+  el('#updated').textContent = `Updated ${now()}`;
+}
+
+function initLocationPicker() {
+  const sel = el('#location');
+  LOCATIONS
+    .map((loc, i) => ({ i, text: dropLabel(loc) }))
+    .sort((a, b) => a.text.localeCompare(b.text))
+    .forEach(({ i, text }) => {
+      const opt = document.createElement('option');
+      opt.value = String(i);
+      opt.textContent = text;
+      sel.appendChild(opt);
+    });
+  sel.value = String(DEFAULT_INDEX);
+  sel.addEventListener('change', () => {
+    current = LOCATIONS[Number(sel.value)];
+    syncLocationChrome();
+    loadAll();
+  });
+}
+
+el('#theme-toggle').addEventListener('change', applyTheme);
+applyTheme();
+
+initLocationPicker();
+syncLocationChrome();
+loadAll();
+
+(function scheduleHourlyRefresh() {
+  const d = new Date();
+  const msToTopOfHour =
+    (60 - d.getMinutes()) * 60000 - d.getSeconds() * 1000 - d.getMilliseconds();
+  setTimeout(() => {
+    loadAll();
+    setInterval(loadAll, 3600000);
+  }, msToTopOfHour);
+})();
+</script>
