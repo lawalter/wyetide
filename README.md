@@ -1,2 +1,2 @@
 # wyetide
-:wave: Weather and tide
+:ocean: Weather and tide
