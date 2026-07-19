@@ -34,6 +34,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Wye Tide</title>
+<!-- Favicon: the same classic-wave line icon used beside the title, inlined as
+     an SVG data URI so there's no extra file to serve. Stroked in firefly-gold
+     (favicons have no surrounding text to inherit currentColor from). -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' fill='none' stroke='%23f4d35e' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 30 C 8 20, 16 10, 27 10 C 36 10, 41 16, 41 23 C 41 29, 36 32, 31 32 C 26 32, 23 28, 24 24 C 25 21, 28 20, 31 22'/%3E%3Cpath d='M6 37 C 12 34, 16 40, 22 37 C 28 34, 32 40, 38 37 C 40 36, 41 36, 43 37'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,700&display=swap" rel="stylesheet">
@@ -107,7 +111,13 @@
     transition: background-color .25s ease, color .25s ease;
   }
   header {
-    display: flex; justify-content: space-between; align-items: flex-start;
+    /* baseline (not flex-start/flex-end): lines the title's baseline — the
+       bottom of the flat letters W/e/T/d, ignoring the "y" descender — up with
+       the dropdown's text baseline, which sits one bottom-padding above the
+       select's bottom edge. Net effect: the title's flat-letter bottoms sit
+       level with the bottom of the dropdown box. flex-end would instead align
+       the "y" descender and push the baseline too high. */
+    display: flex; justify-content: space-between; align-items: baseline;
     gap: 16px; margin-bottom: 20px; max-width: 500px;
   }
   /* Title: Fraunces italic at 700 — bold but not the full 900. Color is its
@@ -121,6 +131,15 @@
     letter-spacing: .01em;
     word-spacing: -.14em;   /* tighten the gap between "Wye" and "Tide" */
     white-space: nowrap;    /* never break "Wye Tide" across lines */
+  }
+  /* Wave beside the title, sized to the lowercase "e" (x-height ≈ 0.5em of the
+     1.7rem title). Its BOTTOM edge is seated on the text baseline — the bottom
+     of the "e" — via vertical-align, not baseline+offset (which floated it
+     high). No top nudge: any positive top raises it off the baseline again. */
+  .title-wave {
+    height: 1em; width: auto; margin-left: .13em;
+    vertical-align: -.25em;
+    overflow: visible;
   }
 
   /* Yellow dot on the "i" of "Tide". CSS cannot address a tittle directly,
@@ -339,7 +358,7 @@
 
 <header>
   <div class="header-left">
-    <h1>Wye T<span class="tittle-i">i<span aria-hidden="true">i</span></span>de</h1>
+    <h1>Wye T<span class="tittle-i">i<span aria-hidden="true">i</span></span>de<svg class="title-wave" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 30 C 8 20, 16 10, 27 10 C 36 10, 41 16, 41 23 C 41 29, 36 32, 31 32 C 26 32, 23 28, 24 24 C 25 21, 28 20, 31 22"/><path d="M6 37 C 12 34, 16 40, 22 37 C 28 34, 32 40, 38 37 C 40 36, 41 36, 43 37"/></svg></h1>
   </div>
   <div class="header-right">
     <div class="header-controls">
@@ -703,6 +722,44 @@ function paintHazards() {
   });
 }
 
+/* Bootstrap "umbrella" icon (bi-umbrella, MIT). Shown in the weather corner
+   when rain is likely at any point from now through 10pm — see umbrellaNeeded().
+   Sized to sit inline left of the hi/lo; inherits color via currentColor. */
+function umbrellaIcon() {
+  return `<svg class="umbrella" width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-label="Umbrella advised" role="img" style="vertical-align:-2px;margin-right:5px">
+    <title>Rain likely before 10pm \u2014 bring an umbrella</title>
+    <path d="M8 0a.5.5 0 0 1 .5.5v.514C12.625 1.238 16 4.22 16 8c0 0 0 .5-.5.5-.149 0-.352-.145-.352-.145l-.004-.004-.025-.023a3.5 3.5 0 0 0-.555-.394A3.17 3.17 0 0 0 13 7.5c-.638 0-1.178.213-1.564.434a3.5 3.5 0 0 0-.555.394l-.025.023-.003.003s-.204.146-.353.146-.352-.145-.352-.145l-.004-.004-.025-.023a3.5 3.5 0 0 0-.555-.394 3.3 3.3 0 0 0-1.064-.39V13.5H8h.5v.039l-.005.083a3 3 0 0 1-.298 1.102 2.26 2.26 0 0 1-.763.88C7.06 15.851 6.587 16 6 16s-1.061-.148-1.434-.396a2.26 2.26 0 0 1-.763-.88 3 3 0 0 1-.302-1.185v-.025l-.001-.009v-.003s0-.002.5-.002h-.5V13a.5.5 0 0 1 1 0v.506l.003.044a2 2 0 0 0 .195.726c.095.191.23.367.423.495.19.127.466.229.879.229s.689-.102.879-.229c.193-.128.328-.304.424-.495a2 2 0 0 0 .197-.77V7.544a3.3 3.3 0 0 0-1.064.39 3.5 3.5 0 0 0-.58.417l-.004.004S5.65 8.5 5.5 8.5s-.352-.145-.352-.145l-.004-.004a3.5 3.5 0 0 0-.58-.417A3.17 3.17 0 0 0 3 7.5c-.638 0-1.177.213-1.564.434a3.5 3.5 0 0 0-.58.417l-.004.004S.65 8.5.5 8.5C0 8.5 0 8 0 8c0-3.78 3.375-6.762 7.5-6.986V.5A.5.5 0 0 1 8 0M6.577 2.123c-2.833.5-4.99 2.458-5.474 4.854A4.1 4.1 0 0 1 3 6.5c.806 0 1.48.25 1.962.511a9.7 9.7 0 0 1 .344-2.358c.242-.868.64-1.765 1.271-2.53m-.615 4.93A4.16 4.16 0 0 1 8 6.5a4.16 4.16 0 0 1 2.038.553 8.7 8.7 0 0 0-.307-2.13C9.434 3.858 8.898 2.83 8 2.117c-.898.712-1.434 1.74-1.731 2.804a8.7 8.7 0 0 0-.307 2.131zm3.46-4.93c.631.765 1.03 1.662 1.272 2.53.233.833.328 1.66.344 2.358A4.14 4.14 0 0 1 13 6.5c.77 0 1.42.23 1.897.477-.484-2.396-2.641-4.355-5.474-4.854z"/>
+  </svg>`;
+}
+
+/* True if any hourly forecast period from now through 10pm tonight (local)
+   has precip probability >= threshold. NWS hourly periods carry
+   probabilityOfPrecipitation.value as a percent. 30% is the "worth carrying
+   one" bar. Returns false on any data problem — an umbrella hint is a
+   convenience, never worth showing a wrong or broken state over. */
+async function umbrellaNeeded(hourlyUrl) {
+  try {
+    if (!hourlyUrl) return false;
+    const res = await fetch(hourlyUrl);
+    if (!res.ok) return false;
+    const periods = (await res.json())?.properties?.periods || [];
+    const now = Date.now();
+    // 10pm tonight in local (Eastern) time, as an epoch ms cutoff.
+    const cutoff = new Date();
+    cutoff.setHours(22, 0, 0, 0);
+    const cutoffMs = cutoff.getTime();
+    if (cutoffMs < now) return false;   // already past 10pm — nothing left today
+    for (const p of periods) {
+      const start = new Date(p.startTime).getTime();
+      if (isNaN(start) || start > cutoffMs) continue;   // beyond tonight
+      if (start + 3600000 <= now) continue;             // fully in the past
+      const pop = p.probabilityOfPrecipitation?.value;
+      if (pop != null && pop >= 30) return true;
+    }
+    return false;
+  } catch { return false; }
+}
+
 /* Small sun glyph (horizon + rising/setting chevron), used next to the
    first-light / sunrise / sunset / last-light times. "dim" = twilight
    (first/last light); bright = the sunrise/sunset instant itself. */
@@ -811,7 +868,7 @@ function nwsBundle(lat, lon) {
     nwsCache.set(key, (async () => {
       const pRes = await fetch(`https://api.weather.gov/points/${lat},${lon}`);
       if (!pRes.ok) throw new Error(`points lookup returned HTTP ${pRes.status}`);
-      const { forecast, observationStations } = (await pRes.json()).properties;
+      const { forecast, forecastHourly, observationStations } = (await pRes.json()).properties;
 
       const sRes = await fetch(observationStations);
       if (!sRes.ok) throw new Error(`stations returned HTTP ${sRes.status}`);
@@ -822,7 +879,7 @@ function nwsBundle(lat, lon) {
       if (!oRes.ok) throw new Error(`observation returned HTTP ${oRes.status}`);
       const oFeats = (await oRes.json()).features || [];
       if (!oFeats.length) throw new Error('no observations found');
-      return { forecast, oFeats };
+      return { forecast, forecastHourly, oFeats };
     })());
   }
   return nwsCache.get(key);
@@ -833,7 +890,7 @@ async function loadWeather() {
   setLoading(cardId);
   const { lat, lon } = current;
   try {
-    const { forecast, oFeats } = await nwsBundle(lat, lon);
+    const { forecast, forecastHourly, oFeats } = await nwsBundle(lat, lon);
     const obs = oFeats[0].properties;
     // Pressure history (Pa + timestamp) for the trend arrow, newest first.
     const presSeries = oFeats
@@ -865,7 +922,11 @@ async function loadWeather() {
 
     // Sun/moon block is an independent fetch; awaited here so the whole
     // card body is written in one pass (no race on #weather-card .body).
-    const sunMoon = await sunMoonBlock();
+    // Umbrella check (hourly precip now->10pm) runs in parallel with it.
+    const [sunMoon, needUmbrella] = await Promise.all([
+      sunMoonBlock(),
+      umbrellaNeeded(forecastHourly)
+    ]);
 
     if (current.lat !== lat || current.lon !== lon) return; // stale guard
 
@@ -956,7 +1017,7 @@ async function loadWeather() {
 
     const highTxt = dayPeriod   ? `${dayPeriod.temperature}&deg;${dayPeriod.temperatureUnit}`   : '\u2014';
     const lowTxt  = nightPeriod ? `${nightPeriod.temperature}&deg;${nightPeriod.temperatureUnit}` : '\u2014';
-    const quickRef = `${highTxt}&nbsp;/&nbsp;${lowTxt}`;
+    const quickRef = `${needUmbrella ? umbrellaIcon() : ''}${highTxt}&nbsp;/&nbsp;${lowTxt}`;
 
     const airRow = (feelF !== null)
       ? `<div class="row"><span>Air temperature</span><span>${airF ?? '\u2014'}&deg;F</span></div>`
