@@ -62,6 +62,7 @@
     --muted: #86ab9f;
     --divider: rgba(244,211,94,.35);
     --link: #5ad6c4;
+    --title: #61d3ba;
     --icon-bright: #f4d35e;
     --icon-dim: #6f9990;
     --moon-lit: #fdf3d8;
@@ -85,6 +86,7 @@
     --muted: #94a3b8;
     --divider: #e2e8f0;
     --link: #2b6cb0;
+    --title: #2b6cb0;
     --icon-bright: #d4a017;
     --icon-dim: #94a3b8;
     --moon-lit: #e8eaf0;
@@ -108,21 +110,21 @@
     display: flex; justify-content: space-between; align-items: flex-start;
     gap: 16px; margin-bottom: 20px; max-width: 500px;
   }
-  /* Title: Fraunces italic at 700 — bold but not the full 900. Color is the same 
-     teal used by the footer source links. line-height:1 keeps the tittle clip below
-     predictable. */
+  /* Title: Fraunces italic at 700 — bold but not the full 900. Color is its
+     own --title var (a green-leaning teal), independent of the footer links'
+     --link. line-height:1 keeps the tittle clip below predictable. */
   h1 {
     font-family: Fraunces, Georgia, serif;
     font-size: 1.7rem; font-weight: 700; font-style: italic;
     line-height: 1; margin: 0;
-    color: var(--link);
+    color: var(--title);
     letter-spacing: .01em;
     word-spacing: -.14em;   /* tighten the gap between "Wye" and "Tide" */
     white-space: nowrap;    /* never break "Wye Tide" across lines */
   }
 
   /* Yellow dot on the "i" of "Tide". CSS cannot address a tittle directly,
-     so the letter is drawn twice: the base "i" in the title color (--link), and an
+     so the letter is drawn twice: the base "i" in the title color (--title), and an
      absolutely-positioned duplicate in firefly yellow clipped to just its
      top slice (the dot) sitting exactly on top. Only this one glyph is
      overlaid, so the clip cannot affect neighboring letters. Nudge
@@ -1011,13 +1013,13 @@ function wxGlyph(period) {
   if (!s) return ['', ''];
   if (has('tsra'))                        return ['\u26c8\ufe0f', 'Thunderstorms'];
   if (has('blizzard', 'snow'))            return ['\u2744\ufe0f', 'Snow'];
-  if (has('sleet', 'fzra'))               return ['\u{1f9ca}', 'Sleet or freezing rain'];
+  if (has('sleet', 'fzra'))               return ['\u{1f4a7}', 'Sleet or freezing rain'];
   if (has('rain_showers'))                return ['\u{1f326}\ufe0f', 'Showers'];
   if (has('rain'))                        return ['\u{1f327}\ufe0f', 'Rain'];
   if (has('fog', 'haze', 'smoke', 'dust')) return ['\u{1f32b}\ufe0f', 'Fog or haze'];
   if (has('wind'))                        return ['\u{1f4a8}', 'Windy'];
-  if (has('hot'))                         return ['\u{1f975}', 'Hot'];
-  if (has('cold'))                        return ['\u{1f976}', 'Cold'];
+  if (has('hot'))                         return ['\u{1f525}', 'Hot'];
+  if (has('cold'))                        return ['\u{1f9ca}', 'Cold'];
   if (has('ovc'))                         return ['\u2601\ufe0f', 'Overcast'];
   if (has('bkn'))                         return day ? ['\u{1f325}\ufe0f', 'Mostly cloudy'] : ['\u2601\ufe0f', 'Mostly cloudy'];
   if (has('sct'))                         return day ? ['\u26c5', 'Partly cloudy'] : ['\u2601\ufe0f', 'Partly cloudy'];
