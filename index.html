@@ -1118,7 +1118,7 @@ async function loadWeather() {
     if (hazards === null) {
       hazHtml = `<div class="haz-none muted">Hazards unavailable</div>`;
     } else if (hazards.length === 0) {
-      hazHtml = `<div class="haz-none">No active hazards</div>`;
+      hazHtml = '';   // no active hazards -> show nothing at all
     } else {
       activeAlerts = hazards;
       hazHtml = `<div class="haz">` + hazards.map((h, i) =>
