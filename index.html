@@ -228,6 +228,26 @@
   .card-toggle { display: none; }
   .detail > .row:first-child { margin-top: 4px; }
 
+  /* 6-day strip: equal-width boxes, one row, divider from the detail above. */
+  .week-forecast {
+    display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+    gap: 4px; margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid var(--divider);
+  }
+  .wf-day {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 2px; text-align: center; min-width: 0; padding: 4px 1px;
+    border-radius: 6px;
+  }
+  .wf-day:hover { background: var(--card-hover); }
+  .wf-dow { font-size: .7rem; font-weight: 600; color: var(--text); text-transform: uppercase; letter-spacing: .02em; }
+  .wf-date { font-size: .62rem; color: var(--muted); }
+  .wf-emoji { font-size: 1.15rem; line-height: 1.3; }
+  .wf-temp { font-size: .72rem; white-space: nowrap; }
+  .wf-hi { color: var(--value-color); font-weight: 600; }
+  .wf-lo { color: var(--muted); }
+  .wf-rain { font-size: .62rem; color: var(--link); min-height: .8rem; white-space: nowrap; }
+
   /* Top-right muted stat (weather high/low only; AQI/UV corners hidden). */
   .corner {
     position: absolute; top: 16px; right: var(--pad);
@@ -1159,6 +1179,7 @@ async function loadWeather() {
         ${cloudRow}
         ${pressureRow}
       </div>
+      ${weekForecastRow(periods)}
     `;
 
     // Wire hazard links (delegated per-render; index maps into activeAlerts).
@@ -1169,6 +1190,81 @@ async function loadWeather() {
   } catch (err) {
     setError(cardId, `NWS fetch failed: ${err.message}`);
   }
+}
+
+/* A little easter egg: a celebratory emoji next to the weekday when a
+   forecasted date lands on a holiday. Fixed-date holidays are matched by
+   month/day; Thanksgiving is the 4th Thursday of November, computed so it
+   stays correct every year. mo/da are 1-based. Returns '' on ordinary days. */
+function holidayEmoji(mo, da, jsDate) {
+  if (mo === 12 && da === 25) return '\u{1f384}';                 // Christmas -> tree
+  // 4th Thursday in November -> turkey. The 1st Thursday falls on the date
+  // (7 - firstDOW + 5) % 7 + 1 in Nov; the 4th is that + 21.
+  if (mo === 11) {
+    const firstDow = new Date(Date.UTC(jsDate.getUTCFullYear(), 10, 1)).getUTCDay();
+    const firstThu = ((4 - firstDow + 7) % 7) + 1;   // 4 = Thursday
+    if (da === firstThu + 21) return '\u{1f983}';                 // turkey
+  }
+  // Assorted fun days -> party popper.
+  const party = (mo === 4 && da === 1)   // Apr 1
+             || (mo === 5 && da === 28)  // May 28
+             || (mo === 7 && da === 8)   // Jul 8
+             || (mo === 8 && da === 3);  // Aug 3
+  if (party) return '\u{1f389}';
+  return '';
+}
+
+/* 6-day strip below the Weather card. The /forecast endpoint already returns
+   14 periods (day + night for a week), so no extra fetch: we pair them into
+   calendar days and pull high from the DAY period, low from the NIGHT period,
+   rain chance as the max of the pair, and an emoji from the day period's icon
+   (reusing wxGlyph). Starts at TOMORROW — today already fills the card above.
+   Robust to the quirk where, late in the day, periods[0] is a night period
+   (no daytime period until tomorrow): we key off calendar date, not index. */
+function weekForecastRow(periods) {
+  if (!Array.isArray(periods) || !periods.length) return '';
+  // Group periods by their local calendar date (YYYY-MM-DD from startTime).
+  const byDay = new Map();
+  for (const p of periods) {
+    const key = (p.startTime || '').slice(0, 10);
+    if (!key) continue;
+    if (!byDay.has(key)) byDay.set(key, { day: null, night: null });
+    const slot = byDay.get(key);
+    if (p.isDaytime) slot.day = p; else slot.night = p;
+  }
+  const todayKey = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  const days = [...byDay.entries()]
+    .filter(([k]) => k > todayKey)      // tomorrow onward
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(0, 7);
+  if (!days.length) return '';
+
+  const pop = (p) => p?.probabilityOfPrecipitation?.value;
+  const boxes = days.map(([key, { day, night }]) => {
+    // Short date M/D, parsed from the key to avoid TZ drift.
+    const [yr, mo, da] = key.split('-').map(Number);
+    const date = `${mo}/${da}`;
+    // Weekday label (Mon, Tue…) in local time.
+    const wd = new Date(key + 'T12:00:00').toLocaleDateString('en-US', {
+      timeZone: 'America/New_York', weekday: 'short'
+    });
+    const holiday = holidayEmoji(mo, da, new Date(Date.UTC(yr, mo - 1, da)));
+    const [glyph] = wxGlyph(day || night);
+    const hi = day?.temperature;
+    const lo = night?.temperature;
+    const rain = Math.max(pop(day) ?? 0, pop(night) ?? 0);
+    const rainTxt = rain > 0 ? `\u{1f4a7}${rain}%` : '';
+    return `
+      <div class="wf-day">
+        <div class="wf-dow">${wd}${holiday ? ' ' + holiday : ''}</div>
+        <div class="wf-date">${date}</div>
+        <div class="wf-emoji">${glyph || ''}</div>
+        <div class="wf-temp"><span class="wf-hi">${hi != null ? hi + '\u00b0' : '\u2014'}</span> <span class="wf-lo">${lo != null ? lo + '\u00b0' : '\u2014'}</span></div>
+        <div class="wf-rain">${rainTxt}</div>
+      </div>`;
+  }).join('');
+
+  return `<div class="week-forecast">${boxes}</div>`;
 }
 
 /* Current-conditions glyph for the Weather card title, derived from the NWS
