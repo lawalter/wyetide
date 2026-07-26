@@ -86,6 +86,10 @@ When there's a chance of precipitation, the Weather card estimates how much. The
 - **Cloud cover** — Clear, Few, Scattered, Broken, Overcast, or Obscured, taken from the observation's reported cloud layers (the densest layer wins).
 - **Pressure** — barometric pressure in inHg with a trend arrow (↑ rising, ↓ falling, → steady over the last ~3 hours). Falls back to sea-level pressure at stations that don't report raw barometric pressure.
 
+### 📆 Six-day forecast
+
+Below the current conditions, the Weather card shows a compact 6-day forecast starting with tomorrow's date. Each box contains the weekday, date, an emoji, forecasted high, forecasted low, and a raindrop emoji with the day's chance of precipitation (shown only when there's actually a chance). 
+
 ### 🌅 Sun times
 
 First light, sunrise, sunset, and last light times are shown for today.
