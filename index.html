@@ -892,9 +892,33 @@ async function loadWeather() {
   try {
     const { forecast, forecastHourly, oFeats } = await nwsBundle(lat, lon);
     const obs = oFeats[0].properties;
-    // Pressure history (Pa + timestamp) for the trend arrow, newest first.
+
+    /* NWS stations often post PARTIAL observations: the newest row may carry
+       wind but a null temperature/humidity/pressure, with a complete row an
+       hour earlier. Reading only oFeats[0] then blanks those fields — which is
+       why some inland stations showed null temp/humidity/pressure while
+       better-instrumented ones (Virginia Beach, DC) looked fine.
+       freshest() walks the recent observations (already fetched for the
+       pressure trend) and returns the newest NON-null value for a field, so a
+       gap in the latest row falls back to the last real reading instead of a
+       dash. Path is like obs.temperature.value, addressed by key here. */
+    const freshest = (key) => {
+      for (const f of oFeats) {
+        const v = f.properties?.[key]?.value;
+        if (v != null) return v;
+      }
+      return null;
+    };
+    /* Pressure history (Pa + timestamp) for the trend arrow, newest first.
+       Uses the SAME field the displayed value resolves to (below): if a
+       station only carries seaLevelPressure, the trend must read that field
+       too, or we'd show a pressure value with a permanently blank arrow.
+       Whichever field the first row has decides the series; mixing the two
+       would compare non-comparable numbers. */
+    const presField = oFeats.some(f => f.properties?.barometricPressure?.value != null)
+      ? 'barometricPressure' : 'seaLevelPressure';
     const presSeries = oFeats
-      .map(f => ({ t: f.properties?.timestamp, pa: f.properties?.barometricPressure?.value }))
+      .map(f => ({ t: f.properties?.timestamp, pa: f.properties?.[presField]?.value }))
       .filter(o => o.t && o.pa != null);
 
     const fRes = await fetch(forecast);
@@ -930,16 +954,18 @@ async function loadWeather() {
 
     if (current.lat !== lat || current.lon !== lon) return; // stale guard
 
-    const airF = cToF(obs.temperature?.value);
+    const airF = cToF(freshest('temperature'));
 
     let feelC = null, feelKind = null;
-    if (obs.windChill?.value !== null && obs.windChill?.value !== undefined) {
-      feelC = obs.windChill.value; feelKind = 'wind chill';
-    } else if (obs.heatIndex?.value !== null && obs.heatIndex?.value !== undefined) {
-      feelC = obs.heatIndex.value; feelKind = 'heat index';
+    const wc = freshest('windChill');
+    const hi = freshest('heatIndex');
+    if (wc !== null) {
+      feelC = wc; feelKind = 'wind chill';
+    } else if (hi !== null) {
+      feelC = hi; feelKind = 'heat index';
     }
     const feelF = cToF(feelC);
-    const humidity = obs.relativeHumidity?.value;
+    const humidity = freshest('relativeHumidity');
     const displayF = feelF ?? airF;
 
     hazShared.tempColor = displayF !== null ? tempCategory(displayF)[1] : null;
@@ -968,10 +994,85 @@ async function loadWeather() {
       return parts.length ? `Chance ${parts.join('/')}` : 'Chance rain';
     })();
 
+    /* Estimated precip amount, parsed from the NWS detailedForecast prose.
+       NWS has no structured amount field — it writes sentences like:
+         "New rainfall amounts between a tenth and quarter of an inch."
+         "...between a tenth and quarter of an inch, except higher amounts
+            possible in thunderstorms."   -> trailing "+"
+         "New rainfall amounts less than a tenth of an inch possible."
+         "New snow accumulation of 1 to 3 inches possible."
+       We show this only when precip is actually in play (pop > 0). Snow is
+       reported as accumulation; rain, sleet, and freezing rain are reported
+       as rainfall (per request, sleet reads like rain). If the sentence can't
+       be parsed, no row appears rather than a misleading one. */
+    const precipAmountRow = (() => {
+      if (!(pop > 0)) return '';
+      const text = period.detailedForecast || '';
+      const isSnow = /snow/i.test(precipLabel);
+      // Pull the relevant sentence: "snow accumulation..." or "rainfall amounts..."
+      const re = isSnow
+        ? /(?:new\s+)?snow\s+accumulation[^.]*/i
+        : /(?:new\s+)?rainfall\s+amounts[^.]*/i;
+      const m = text.match(re);
+      if (!m) return '';
+      const seg = m[0].toLowerCase();
+
+      // English fractions/counts NWS uses for precip amounts -> inches.
+      // Includes article-less forms ("...a tenth and quarter...") since NWS
+      // often drops the article on the second value of a range.
+      const words = {
+        'three quarters': 0.75, 'three-quarters': 0.75,
+        'a tenth': 0.1, 'one tenth': 0.1, 'tenth': 0.1,
+        'a quarter': 0.25, 'one quarter': 0.25, 'quarter': 0.25,
+        'a third': 0.33, 'third': 0.33,
+        'a half': 0.5, 'one half': 0.5, 'half an inch': 0.5, 'half': 0.5,
+        'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+        'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
+      };
+      const fmt = (n) => (Number.isInteger(n) ? String(n) : String(n).replace(/^0/, '0'));
+      // Find every amount token (word phrases or bare numbers) in order.
+      const found = [];
+      // bare numbers first (e.g. "1 to 3 inches")
+      const numMatches = [...seg.matchAll(/(\d+(?:\.\d+)?)/g)].map(x => parseFloat(x[1]));
+      if (numMatches.length) {
+        numMatches.forEach(n => found.push(n));
+      } else {
+        // word phrases, longest-first so "one half" beats "one"
+        const keys = Object.keys(words).sort((a, b) => b.length - a.length);
+        let scan = seg, guard = 0;
+        // collect in text order by repeatedly finding the earliest remaining key
+        const hits = [];
+        keys.forEach(k => {
+          let idx = scan.indexOf(k);
+          while (idx !== -1) { hits.push({ i: idx, v: words[k], len: k.length }); idx = scan.indexOf(k, idx + 1); }
+        });
+        // de-overlap: sort by position, drop hits inside an already-taken span
+        hits.sort((a, b) => a.i - b.i || b.len - a.len);
+        const taken = [];
+        hits.forEach(h => {
+          if (!taken.some(t => h.i < t.i + t.len && h.i + h.len > t.i)) { taken.push(h); found.push(h.v); }
+        });
+      }
+      if (!found.length) return '';
+
+      const plus = /higher amounts|except.*thunderstorm/i.test(m[0]) ? '+' : '';
+      const lt = /less than|up to/i.test(seg);
+      let valStr;
+      if (lt && found.length >= 1) {
+        valStr = `<${fmt(Math.max(...found))}`;
+      } else if (found.length >= 2) {
+        valStr = `${fmt(Math.min(...found))}-${fmt(Math.max(...found))}`;
+      } else {
+        valStr = fmt(found[0]);
+      }
+      const label = isSnow ? 'Estimated accumulation' : 'Estimated rainfall';
+      return `<div class="row"><span>${label}</span><span>${valStr}${plus} in</span></div>`;
+    })();
+
     // Cloud cover -> text from the observation's cloudLayers (no extra fetch).
     const cloudRow = `<div class="row"><span>Cloud cover</span><span>${cloudText(obs.cloudLayers)}</span></div>`;
 
-    // Gust: OBSERVED (period forecast has no gust field). Hidden when null.
+    // Gust: OBSERVED (period forecast has no gust field). "None" when null.
     let gustMph = null;
     const gVal = obs.windGust?.value;
     if (gVal != null) {
@@ -980,10 +1081,20 @@ async function loadWeather() {
               : u.includes('m_s')  ? gVal * 2.236936
               : gVal;
     }
-    const gustRow = `<div class="row"><span>Gusts</span><span>${gustMph != null ? Math.round(gustMph) : 0} mph</span></div>`;
+    const gustRow = `<div class="row"><span>Gusts</span><span>${gustMph != null ? Math.round(gustMph) + ' mph' : 'None'}</span></div>`;
 
-    // Barometric pressure -> inHg (Pa / 3386.389). Guarded with em-dash.
-    const paVal = obs.barometricPressure?.value;
+    /* Pressure -> inHg (Pa / 3386.389). Guarded with em-dash.
+       Two fallbacks stack here:
+         1. freshest() walks recent rows, covering an intermittent null.
+         2. barometricPressure -> seaLevelPressure by FIELD. Many ASOS stations
+            (which several inland points resolve to) never populate
+            barometricPressure at all — every row is null — but DO report
+            seaLevelPressure. That's why Huntingtown / Upper Marlboro read null
+            while better-instrumented stations didn't. Per the NWS API, these
+            are distinct fields and a station may carry one without the other.
+       If seaLevelPressure is the source, the value is already sea-level
+       normalized, which is the comparable figure a dashboard wants anyway. */
+    const paVal = freshest(presField);
     const inHg = paVal != null ? (paVal / 3386.389).toFixed(2) : null;
     // Trend: newest vs. the reading closest to 3h earlier (>=1h old).
     // +/-0.02 inHg deadband. Up/down/steady; blank when history is too short.
@@ -1044,6 +1155,7 @@ async function loadWeather() {
         <div class="row"><span>Wind</span><span>${period.windSpeed} ${period.windDirection || ''}</span></div>
         ${gustRow}
         <div class="row"><span>${precipLabel}</span><span>${popTxt}</span></div>
+        ${precipAmountRow}
         ${cloudRow}
         ${pressureRow}
       </div>
@@ -1733,8 +1845,7 @@ async function loadTide() {
       const line = (p) => {
         if (!p) return '\u2014';
         const day = p.t.slice(0, 10) !== isoToday ? ' (tmrw)' : '';
-        const ht = p.v ? ` &middot; ${Number(p.v).toFixed(1)} ft` : '';
-        return `${fmtClock(p.t)}${day}${ht}`;
+        return `${fmtClock(p.t)}${day}`;
       };
 
       if (current.lat !== lat || current.lon !== lon) return;
