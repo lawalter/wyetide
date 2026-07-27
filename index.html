@@ -1233,10 +1233,16 @@ function weekForecastRow(periods) {
     if (p.isDaytime) slot.day = p; else slot.night = p;
   }
   const todayKey = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  /* Strictly after today, and capped at 6 for a STABLE count. Why 6 and not 7:
+     the NWS feed's day window slides forward as the day progresses — in the
+     morning it spans today..day7 (so "after today" = 6 days), but by evening
+     today's daytime period drops off and the window rolls to today-night..day8
+     (yielding 7). Capping at 6 keeps the strip the same size whenever it's
+     loaded, instead of showing 6 in the morning and 7 at night. */
   const days = [...byDay.entries()]
     .filter(([k]) => k > todayKey)      // tomorrow onward
     .sort(([a], [b]) => a.localeCompare(b))
-    .slice(0, 7);
+    .slice(0, 6);
   if (!days.length) return '';
 
   const pop = (p) => p?.probabilityOfPrecipitation?.value;
