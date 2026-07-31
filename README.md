@@ -1,8 +1,5 @@
 <p align="center">
-  <svg width="120" height="120" viewBox="0 0 48 48" fill="none" stroke="#61d3ba" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Wye Tide wave logo">
-    <path d="M4 30 C 8 20, 16 10, 27 10 C 36 10, 41 16, 41 23 C 41 29, 36 32, 31 32 C 26 32, 23 28, 24 24 C 25 21, 28 20, 31 22"/>
-    <path d="M6 37 C 12 34, 16 40, 22 37 C 28 34, 32 40, 38 37 C 40 36, 41 36, 43 37"/>
-  </svg>
+  <img src="wave.svg" width="120" height="120" alt="Wye Tide wave logo">
 </p>
 
 <h1 align="center">Wye Tide</h1>
