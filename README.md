@@ -47,7 +47,7 @@ All data belongs to its provider and is subject to that provider's terms, indepe
 | 🌅 Sun &amp; solar times | [sunrise-sunset.org](https://sunrise-sunset.org/) | Free &amp; keyless |
 | 🌊 Tides | [NOAA CO-OPS](https://tidesandcurrents.noaa.gov/) | Official NOS predictions, public domain |
 
-## Weather conditions
+## Weather 🌤️
 
 ### 🌡️ Current temperature
 
@@ -94,9 +94,6 @@ First light, sunrise, sunset, and last light times are shown for today.
 ### 🌙 Moon phase
 
 Computed from a known new-moon reference date and the 29.53-day lunar cycle. The dashboard works out the moon's current age, names the phase (New, Waxing Crescent, First Quarter, and so on), and calculates the illumination percentage with a cosine curve. A moon icon is drawn to match that illumination.
-
-### 😄 Emojis
-A little emoji beside the Weather card header is the current location's conditions at a glance, translated from the official NWS forecast icon. Hover over to view a description via tooltip. A few of these are time-aware: **clear** skies show a sun ☀️ by day and a moon 🌙 by night, and both **partly** ⛅ and **mostly cloudy** 🌥️ quietly swap to a plain cloud ☁️ after dark. Since some conditions overlap in the raw forecast data, emojis are ranked hierarchically. For example, thunderstorms outrank plain rain, and snow outranks sleet. This system allows users to get the most meaningful takeaway from a single glyph.
 
 ## Air Quality 🌫️ 
 
