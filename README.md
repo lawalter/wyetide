@@ -96,26 +96,7 @@ First light, sunrise, sunset, and last light times are shown for today.
 Computed from a known new-moon reference date and the 29.53-day lunar cycle. The dashboard works out the moon's current age, names the phase (New, Waxing Crescent, First Quarter, and so on), and calculates the illumination percentage with a cosine curve. A moon icon is drawn to match that illumination.
 
 ### 😄 Emojis
-A little emoji beside the Weather card header is the current location's conditions at a glance, translated from the official NWS forecast icon. Hover over to view a description via tooltip. Here are all of the possible Weather emojis:
-
-| Emoji | Means |
-|---|---|
-| ⛈️ | Thunderstorms |
-| ❄️ | Snow |
-| 💧 | Sleet or freezing rain |
-| 🌦️ | Showers |
-| 🌧️ | Rain |
-| 🌫️ | Fog, haze, smoke, or dust |
-| 💨 | Windy |
-| 🔥 | Hot |
-| 🧊 | Cold |
-| ☁️ | Overcast |
-| 🌥️ | Mostly cloudy |
-| ⛅ | Partly cloudy |
-| ☀️ | Clear (by day) |
-| 🌙 | Clear (at night) |
-
-A few of these are time-aware: **clear** skies show a sun ☀️ by day and a moon 🌙 by night, and both **partly** ⛅ and **mostly cloudy** 🌥️ quietly swap to a plain cloud ☁️ after dark. Since some conditions overlap in the raw forecast data, emojis are ranked hierarchically. For example, thunderstorms outrank plain rain, and snow outranks sleet. This system allows users to get the most meaningful takeaway from a single glyph.
+A little emoji beside the Weather card header is the current location's conditions at a glance, translated from the official NWS forecast icon. Hover over to view a description via tooltip. A few of these are time-aware: **clear** skies show a sun ☀️ by day and a moon 🌙 by night, and both **partly** ⛅ and **mostly cloudy** 🌥️ quietly swap to a plain cloud ☁️ after dark. Since some conditions overlap in the raw forecast data, emojis are ranked hierarchically. For example, thunderstorms outrank plain rain, and snow outranks sleet. This system allows users to get the most meaningful takeaway from a single glyph.
 
 ## Air Quality 🌫️ 
 
@@ -169,33 +150,19 @@ The Air Quality Index colors use the EPA's [ColorVision Assist](https://document
 | 90–99 | Very Hot | `#c0392b` 🔴 |
 | ≥ 100 | Extreme | `#ec4899` 🩷 |
 
-### Air Quality Index (AQI)
-
-EPA's [ColorVision Assist](https://document.airnow.gov/technical-assistance-document-for-the-reporting-of-daily-air-quailty.pdf)
-palette is used in Wye Tide instead of the standard palette for better contrast on a dark theme. Breakpoints are the AQI's official definition and are not adjustable; see `DATA SOURCE COMPLIANCE` in `index.html`.
-
-| AQI | Category | Color |
-|---|---|---|
-| 0–50 | Good | `#9eff91` 🟢 |
-| 51–100 | Moderate | `#ffc905` 🟡 |
-| 101–150 | Unhealthy for Sensitive Groups | `#ff8205` 🟠 |
-| 151–200 | Unhealthy | `#f02200` 🔴 |
-| 201–300 | Very Unhealthy | `#890997` 🟣 |
-| 301+ | Hazardous | `#640015` 🟤 |
-
-### UV Index
-
-Matched to the first five stops of the AQI ColorVision Assist palette above, so
-UV and AQI read as one severity scale. The AQI's "Hazardous" category is
-intentionally unused here — UV has no tier equivalent to hazardous air.
-
-| UV Index | Category | Color |
-|---|---|---|
-| 0–2 | Low | `#9eff91` 🟢 |
-| 3–5 | Moderate | `#ffc905` 🟡 |
-| 6–7 | High | `#ff8205` 🟠 |
-| 8–10 | Very High | `#f02200` 🔴 |
-| 11+ | Extreme | `#890997` 🟣 |
+### Air Quality Index (AQI) &amp; UV Index
+ 
+AQI and UV share one palette so the two read as a single severity scale. AQI uses EPA's [ColorVision Assist](https://document.airnow.gov/technical-assistance-document-for-the-reporting-of-daily-air-quailty.pdf) palette instead of the standard palette for better contrast on a dark theme; its breakpoints are the AQI's official definition and are not adjustable (see `DATA SOURCE COMPLIANCE` in `index.html`). UV is matched to the first five bins. The AQI's "Hazardous" tier is intentionally unused, since UV has no
+equivalent.
+ 
+| Color | AQI | AQI Category | UV Index | UV Category |
+|---|---|---|---|---|
+| `#9eff91` 🟢 | 0–50 | Good | 0–2 | Low |
+| `#ffc905` 🟡 | 51–100 | Moderate | 3–5 | Moderate |
+| `#ff8205` 🟠 | 101–150 | Unhealthy for Sensitive Groups | 6–7 | High |
+| `#f02200` 🔴 | 151–200 | Unhealthy | 8–10 | Very High |
+| `#890997` 🟣 | 201–300 | Very Unhealthy | 11+ | Extreme |
+| `#640015` 🟤 | 301+ | Hazardous | — | — |
 
 ## Licensing
 
