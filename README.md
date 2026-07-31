@@ -16,7 +16,7 @@ AI is raving:
 ## Overview
 
 The [Wye Tide](https://lawalter.github.io/wyetide) dashboard includes:
-- **🌤️ Weather** — the current conditions with a matching emoji, temperature, humidity, wind, gusts, precipitation potential, severe weather alerts, and more!
+- **🌤️ Weather** — the current conditions with temperature, humidity, wind, gusts, precipitation potential, severe weather alerts, etc, and a 6-day forecast.
 - **🌅 Sun and Moon** — first light, sunrise, sunset, and last light; tonight's moon is shown as an icon with illumination percentage matching the current phase.
 - **🌫️ Air Quality** — the US AQI with today's forecasted peak, the highest reading so far, PM2.5, PM10, and ozone.
 - **😎 UV Index** — the current UV index, a sparkline of the whole day's curve, solar noon, and estimated "burn time".
@@ -24,9 +24,9 @@ The [Wye Tide](https://lawalter.github.io/wyetide) dashboard includes:
 
 For select locations in:
 
-- **Maryland** - Chesapeake Beach, Edgewater, Huntingtown, Patuxent NWR, Upper Marlboro, and Wye Island NRMA
-- **Virginia** - Virginia Beach
-- **Washington, DC** - Smithsonian
+- **Maryland** — Chesapeake Beach, Edgewater, Huntingtown, Patuxent NWR, Upper Marlboro, and Wye Island NRMA
+- **Virginia** — Virginia Beach
+- **Washington, DC** — Smithsonian
 
 ## Dive in!
 
@@ -41,7 +41,7 @@ All data belongs to its provider and is subject to that provider's terms, indepe
 | Data | Source | Notes |
 |---|---|---|
 | 🌤️ Weather &amp; alerts | [NOAA / National Weather Service](https://api.weather.gov) | US Government work, public domain |
-| 🌫️ Air quality (without key) | [Open-Meteo](https://open-meteo.com) | CC&nbsp;BY&nbsp;4.0 — modeled AQI + pollutant levels |
+| 🌫️ Air quality (w/o key) | [Open-Meteo](https://open-meteo.com) | CC&nbsp;BY&nbsp;4.0 — modeled AQI + pollutant levels |
 | 🟢 Air quality (with key) | [EPA AirNow](https://www.airnow.gov/) | Preliminary data; credits the reporting agencies |
 | 😎 UV index | [Open-Meteo](https://open-meteo.com) | CC&nbsp;BY&nbsp;4.0 |
 | 🌅 Sun &amp; solar times | [sunrise-sunset.org](https://sunrise-sunset.org/) | Free &amp; keyless |
