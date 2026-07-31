@@ -122,9 +122,10 @@
   }
   /* Live date + clock line under the header, above the cards. */
   .page-datetime {
-    max-width: 500px; margin-bottom: 20px;
+    max-width: 500px; margin-bottom: 10px;
     font-size: .82rem; color: var(--muted);
   }
+  .page-datetime .dt-time { color: var(--text); font-variant-numeric: tabular-nums; }
   /* Title: Fraunces italic at 700 — bold but not the full 900. Color is its
      own --title var (a green-leaning teal), independent of the footer links'
      --link. line-height:1 keeps the tittle clip below predictable. */
@@ -2037,14 +2038,23 @@ applyTheme();
 /* Live date + clock under the header. Date shown once; time ticks each second.
    Uses the viewer's local time (no fixed zone) — this is "your clock", not the
    data's timezone, which the footer "Updated" stamp already covers. */
-function showDate() {
+function startClock() {
   const node = el('#datetime');
   if (!node) return;
-  node.textContent = new Date().toLocaleDateString(undefined, {
-    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
-  });
+  const tick = () => {
+    const d = new Date();
+    const date = d.toLocaleDateString(undefined, {
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+    });
+    const time = d.toLocaleTimeString(undefined, {
+      hour: 'numeric', minute: '2-digit', second: '2-digit'
+    });
+    node.innerHTML = `${date} &middot; <span class="dt-time">${time}</span>`;
+  };
+  tick();
+  setInterval(tick, 1000);
 }
-showDate();
+startClock();
 
 initLocationPicker();
 syncLocationChrome();
