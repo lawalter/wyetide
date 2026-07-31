@@ -1205,6 +1205,10 @@ function holidayEmoji(mo, da, jsDate) {
     const firstThu = ((4 - firstDow + 7) % 7) + 1;   // 4 = Thursday
     if (da === firstThu + 21) return '\u{1f983}';                 // turkey
   }
+  if (mo === 10 && da === 31) return '\u{1f47b}';                 // Oct 31 -> ghost
+  if (mo === 2  && da === 14) return '\u{2764}\u{fe0f}';          // Feb 14 -> red heart
+  if (mo === 3  && da === 17) return '\u{1f340}';                 // Mar 17 -> four-leaf clover
+  if (mo === 10 && da === 23) return '\u{1f342}';                 // Oct 23 -> falling leaf
   // Assorted fun days -> party popper.
   const party = (mo === 4 && da === 1)   // Apr 1
              || (mo === 5 && da === 28)  // May 28
